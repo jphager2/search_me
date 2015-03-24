@@ -97,7 +97,7 @@ module SearchMe
           warn 'WARNING: has_many_through relationships not available'
         end
       }
-      join(conditions)
+      self.where(join(conditions))
     end
 
     def reflection_search_condition(term)
@@ -180,7 +180,8 @@ module SearchMe
         "CAST(#{table_column} AS CHAR) LIKE '%#{term}%'"
       when :boolean
         term = {
-          true => "= 't'", false => "= 'f'", nil => 'IS NULL'
+          true => "= 't'", false => "= 'f'", nil => 'IS NULL',
+          1 => "= 't'", 0 => "= 'f'"
         }.fetch(term) {
           error = 'boolean column term must be true, false or nil'
           raise ArgumentError, error
