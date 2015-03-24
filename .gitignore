@@ -1,0 +1,12 @@
+*.swp
+*~
+*.jpg
+*.yml
+*.log
+
+spec/objects/
+spec/fixtures/
+tmp/
+
+*.gem
+
