@@ -45,9 +45,17 @@ module SearchMe
       self.where(simple_search_where_condition(attribute, term))
     end
 
+    def join(array)
+      array.delete_if { |condition| condition.blank? }.join(joiner)
+    end
+
     def search(term)
       @joiner = :or
-      self.simple_search(term).reflection_search(term)
+      condition = join([
+        simple_search_condition(term), 
+        reflection_search_condition(term)
+      ])
+      self.where(condition)
     end
 
     def joiner 
@@ -65,13 +73,13 @@ module SearchMe
       end
       @this_search_attributes = hash
 
-      @this_search_attributes.keys.map { |type|
+      conditions = @this_search_attributes.keys.map { |type|
         case type
         when :simple
-          @this_search_attributes[type].map { |attribute|
+          join(@this_search_attributes[type].map { |attribute|
             term = search_terms[type][attribute]
             simple_search_where_condition(attribute, term)           
-          }.join(joiner)
+          })
         when :belongs_to
           self.advanced_search_reflection_group(type,search_terms) {
             |reflection,objs|
@@ -88,12 +96,12 @@ module SearchMe
         when :has_many_through
           warn 'WARNING: has_many_through relationships not available'
         end
-      }.join(joiner)
+      }
+      join(conditions)
     end
 
-    def reflection_search(term)
+    def reflection_search_condition(term)
       macro_groups = search_attributes
-      macro_groups.delete(:simple)
       @this_search_attributes = macro_groups
 
       condition = macro_groups.keys.map { |type|
@@ -112,22 +120,27 @@ module SearchMe
         when :has_many_through
           warn 'WARNING: has_many_through relationships not available'
         end
-      }.compact.join(joiner)
+      }
+      join(condition)
+    end
 
-      self.where(condition)
+
+    def reflection_search(term)
+      self.where(reflection_search_condition(term))
     end
 
     def map_reflection_group(type, outer_block)
-      @this_search_attributes[type].map { |reflection, attributes|
+      cond = @this_search_attributes[type].map {|reflection, attributes|
         reflection = self.reflections[reflection]
         klass      = klass_for_reflection(reflection)
 
-        reflection_condition = yield(attributes,klass,reflection)
-          .join(joiner)
+        reflection_condition = join(yield(attributes,klass,reflection))
+          
         search_res = klass.where(reflection_condition)
 
         outer_block.call(reflection, search_res)
-      }.join(joiner)
+      }
+      join(cond)
     end
 
     def search_reflection_group(type, term, &block)
@@ -147,15 +160,35 @@ module SearchMe
       end
     end
 
-    def simple_search(term)
+    def simple_search_condition(term)
       condition = search_attributes[:simple].map { |attribute|
         simple_search_where_condition(attribute, term)
-      }.join(joiner)
-      self.where(condition)
+      }
+      join(condition)
+    end
+
+    def simple_search(term)
+      self.where(simple_search_condition(term))
     end
 
     def simple_search_where_condition(attribute, term)
-      "CAST(#{self.table_name}.#{attribute} AS CHAR) LIKE '%#{term}%'"
+      table_column = "#{self.table_name}.#{attribute}"
+      column = self.columns.find { |col| col.name == attribute.to_s }
+
+      case column.type
+      when :string, :integer, :text, :float, :decimal
+        "CAST(#{table_column} AS CHAR) LIKE '%#{term}%'"
+      when :boolean
+        term = {
+          true => "= 't'", false => "= 'f'", nil => 'IS NULL'
+        }.fetch(term) {
+          error = 'boolean column term must be true, false or nil'
+          raise ArgumentError, error
+        } 
+        "#{table_column} #{term}"
+      else
+        warn "#{column.type} type is not supported by SearchMe::Search"
+      end
     end
 
     def klass_for_reflection(reflection)
