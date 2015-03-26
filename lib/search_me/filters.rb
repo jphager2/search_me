@@ -42,8 +42,7 @@ module SearchMe
       build_between_query_for(quarter_for_date(date))
     end
 
-    private
-    def duration(duration)
+    def filter_named_duration(duration)
       today = Date.today
 
       duration = case duration
@@ -71,6 +70,7 @@ module SearchMe
       end
     end
 
+    private
     def build_between_query_for(duration)
       field = SearchMe.config.time_field
       in_created_at = "(#{field} > ?  AND  #{field} < ?)"
