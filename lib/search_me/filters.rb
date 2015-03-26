@@ -66,7 +66,7 @@ module SearchMe
       if duration
         build_between_query_for(duration)
       else
-        self 
+        self.all
       end
     end
 
