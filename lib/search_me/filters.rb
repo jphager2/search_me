@@ -1,38 +1,44 @@
 module SearchMe
   module Filters
-    def filter_month_quarter_or_year(month, quarter, year)
+    def filter_month_quarter_or_year(month=nil, quarter=nil, year=nil)
+      month, quarter, year = sanitize_params(month, quarter, year)
       if month
-        month(month, year)
+        filter_month(month, year)
       elsif quarter
-        quarter(quarter, year)
-      elsif year
-        year(year)
+        filter_quarter(quarter, year)
       else
-        self
+        filter_year(year)
       end
     end
 
-    def filter_year(year)
-      return self if year.nil? 
+    def filter_year(year = nil)
+      year = sanitize_params(year).first
 
-      date = Date.new(year, 1, 1)
+      year ||= Date.today.year
+      date   = Date.new(year, 1, 1)
+
       build_between_query_for(year_for_date(date))
     end
 
-    def filter_month(month, year)
-      return self if month.nil? 
+    def filter_month(month = nil, year = nil)
+      month, year = sanitize_params(month, year)
 
-      year ||= Date.today.year
-      date = Date.new(year, month, 1)
+      month ||= Date.today.month
+      year  ||= Date.today.year
+      date    = Date.new(year, month, 1)
+
       build_between_query_for(month_for_date(date))
     end
 
-    def filter_quarter(quarter, year)
-      return self if quarter.nil? || quarter > 4 or quarter < 1
+    def filter_quarter(quarter = nil, year = nil)
+      quarter, year = sanitize_params(quarter, year)
+      quarter ||= (Date.today.month - 1) / 3 + 1
+      return self if quarter > 4
 
-      year ||= Date.today.year
-      month = (quarter - 1) * 3 + 1
-      date = Date.new(year, month, 1)
+      year    ||= Date.today.year
+      month     = (quarter - 1) * 3 + 1
+      date      = Date.new(year, month, 1)
+      
       build_between_query_for(quarter_for_date(date))
     end
 
@@ -84,6 +90,11 @@ module SearchMe
 
     def quarter_for_date(date)
       [date.beginning_of_quarter, date.end_of_quarter]
+    end
+
+    def sanitize_params(*params)
+      # i.e. Integer or nil. Also no zero year, month, day
+      params.map { |p| p.to_i if p.present? && !p.to_i.zero? }
     end
   end
 end
