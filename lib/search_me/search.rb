@@ -19,7 +19,7 @@ module SearchMe
         raise ArgumentError, 'incorect type given'
       end
 
-      search_attributes_hash!(attributes, type, @search_attributes)
+      search_attributes_hash!(attributes, type, search_attributes)
     end
 
     def alias_advanced_search(attribute, type: :simple, &block)
