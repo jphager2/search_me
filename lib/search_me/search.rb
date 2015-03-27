@@ -97,6 +97,13 @@ module SearchMe
             |reflection,objs|
             "#{reflection.name}_id IN (#{object_ids(objs).join(',')})"
           }
+        when :has_one
+          self.advanced_search_reflection_group(type,search_terms) {
+            |reflection,objs|
+            f_key = "#{name_for(reflection.active_record.name)}_id"
+
+            "id IN (#{object_ids(objs, f_key).join(',')})"
+          }
         when :has_many
           self.advanced_search_reflection_group(type,search_terms) {
             |reflection,objs|
@@ -126,6 +133,12 @@ module SearchMe
           self.search_reflection_group(type, term) { |reflection, objs|
             f_key = reflection.options
               .fetch(:foreign_key) { "#{self.to_s.underscore}_id" }
+
+            "id IN (#{object_ids(objs, f_key).join(',')})"
+          }
+        when :has_one
+          self.search_reflection_group(type, term) { |reflection, objs|
+            f_key = "#{name_for(reflection.active_record.name)}_id"
 
             "id IN (#{object_ids(objs, f_key).join(',')})"
           }
@@ -230,10 +243,20 @@ module SearchMe
 
     def klass_for_reflection(reflection)
       if name = reflection.options[:class_name]
-        name.constantize
+        constant_for(name)
       else
-        reflection.name.to_s.camelize.singularize.constantize
+        constant_for(reflection.name)
       end
+    end
+
+    def name_for(constant, plural: false)
+      name = constant.to_s.underscore
+      name = name.singularize unless plural
+      name
+    end
+
+    def constant_for(name)
+      name.to_s.camelize.singularize.constantize
     end
 
     def sanitize_params!(params)
