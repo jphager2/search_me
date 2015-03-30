@@ -117,7 +117,16 @@ module SearchMe
             "id IN (#{object_ids(objs, f_key).join(',')})"
           }
         when :has_many_through
-          warn 'WARNING: has_many_through relationships not available'
+          warn 'WARNING: has_many_through in development'
+          self.advanced_search_reflection_group(type,search_terms) {
+            |reflection,objs|
+
+            f_key = "#{name_for(reflection.name)}_id"
+            related = through_klass_for_reflection(reflection)
+              .where(f_key => objs.ids)
+
+            "id IN (#{object_ids(related).join(',')})"
+          }
         end
       }
       self.where(join(conditions))
@@ -147,7 +156,14 @@ module SearchMe
             "id IN (#{object_ids(objs, f_key).join(',')})"
           }
         when :has_many_through
-          warn 'WARNING: has_many_through relationships not available'
+          warn 'WARNING: has_many_through in development'
+          self.search_reflection_group(type, term) { |reflection,objs|
+            f_key = "#{name_for(reflection.name)}_id"
+            related = through_klass_for_reflection(reflection)
+              .where(f_key => objs.ids)
+
+            "id IN (#{object_ids(related).join(',')})"
+          }
         end
       }
       join(condition)
@@ -245,6 +261,10 @@ module SearchMe
       (column ? objects.map(&column.to_sym) : objects.ids) << -5318008 
     end
 
+    def through_klass_for_reflection(reflection)
+      constant_for(reflection.options[:through])
+    end
+
     def klass_for_reflection(reflection)
       if name = reflection.options[:class_name]
         constant_for(name)
@@ -254,9 +274,9 @@ module SearchMe
     end
 
     def name_for(constant, options = {})
-      options.fetch(:plural) { false }
-      name = constant.to_s.underscore
-      name = name.singularize unless plural
+      plural = options.fetch(:plural) { false }
+      name   = constant.to_s.underscore
+      name   = name.singularize unless plural
       name
     end
 
