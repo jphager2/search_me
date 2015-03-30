@@ -14,7 +14,8 @@ module SearchMe
       }
     end
 
-    def attr_search(*attributes, type: :simple)
+    def attr_search(*attributes, options = {}) 
+      type = options.fetch[:type] { :simple }
       unless ([:simple] + self.reflections.keys).include?(type)
         raise ArgumentError, 'incorect type given'
       end
@@ -22,7 +23,8 @@ module SearchMe
       search_attributes_hash!(attributes, type, search_attributes)
     end
 
-    def alias_advanced_search(attribute, type: :simple, &block)
+    def alias_advanced_search(attribute, options = {}, &block)
+      type = options.fetch[:type] { :simple }
       advanced_search_blocks[type][attribute] = block
     end
 
@@ -249,7 +251,8 @@ module SearchMe
       end
     end
 
-    def name_for(constant, plural: false)
+    def name_for(constant, options = {})
+      options.fetch[:plural] { false }
       name = constant.to_s.underscore
       name = name.singularize unless plural
       name
