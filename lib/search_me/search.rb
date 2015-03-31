@@ -16,9 +16,11 @@ module SearchMe
 
     # assuming the last attribute could be a hash
     def attr_search(*attributes)  
-      options = attributes.last.is_a?(Hash) ? attributes.pop : {}
-      type    = options.fetch(:type) { :simple }
-      unless ([:simple] + self.reflections.keys).include?(type)
+      options       = attributes.last.is_a?(Hash) ? attributes.pop : {}
+      type          = (options.fetch(:type) { :simple }).to_sym
+      accepted_keys = [:simple] + self.reflections.keys.map(&:to_sym)
+      
+      unless accepted_keys.include?(type.to_sym)
         raise ArgumentError, 'incorect type given'
       end
 
@@ -35,9 +37,9 @@ module SearchMe
         hash[:simple] += attributes
         hash[:simple] = hash[:simple].uniq
       else
-        reflection = self.reflections[type]
-        macro      = reflection.macro
-        klass      = klass_for_reflection(reflection)
+        reflection  = indifferent_reflections[type]
+        macro       = reflection.macro
+        klass       = klass_for_reflection(reflection)
 
         if macro == :has_many
           macro = :has_many_through if reflection.options[:through]
@@ -176,7 +178,7 @@ module SearchMe
 
     def map_reflection_group(type, outer_block)
       cond = @this_search_attributes[type].map {|reflection, attributes|
-        reflection = self.reflections[reflection]
+        reflection = indifferent_reflections[reflection]
         klass      = klass_for_reflection(reflection)
 
         reflection_condition = join(yield(attributes,klass,reflection))
@@ -292,6 +294,10 @@ module SearchMe
         end
         params.delete(k) if v.blank? && !(v == false)
       }
+    end
+
+    def indifferent_reflections
+      ActiveSupport::HashWithIndifferentAccess.new(self.reflections)
     end
   end
 end
