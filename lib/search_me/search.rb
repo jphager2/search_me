@@ -123,11 +123,12 @@ module SearchMe
           self.advanced_search_reflection_group(type,search_terms) {
             |reflection,objs|
 
-            f_key = "#{name_for(reflection.name)}_id"
+            many_f_key = "#{name_for(reflection.name)}_id"
+            self_f_key = "#{name_for(self)}_id"
             related = through_klass_for_reflection(reflection)
               .where(f_key => objs.ids)
 
-            "id IN (#{object_ids(related).join(',')})"
+            "id IN (#{object_ids(related, self_f_key).join(',')})"
           }
         end
       }
@@ -161,10 +162,11 @@ module SearchMe
           warn 'WARNING: has_many_through in development'
           self.search_reflection_group(type, term) { |reflection,objs|
             f_key = "#{name_for(reflection.name)}_id"
+            self_f_key = "#{name_for(self)}_id"
             related = through_klass_for_reflection(reflection)
               .where(f_key => objs.ids)
 
-            "id IN (#{object_ids(related).join(',')})"
+            "id IN (#{object_ids(related, self_f_key).join(',')})"
           }
         end
       }
