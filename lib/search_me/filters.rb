@@ -70,6 +70,10 @@ module SearchMe
       end
     end
 
+    def filter_by_range(range)
+      build_between_query_for([range.first, range.last])
+    end
+
     private
     def build_between_query_for(duration)
       field = SearchMe.config.time_field
