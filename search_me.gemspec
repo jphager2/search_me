@@ -5,7 +5,7 @@ files.push('LICENSE')
 
 Gem::Specification.new do |s|
   s.name        = 'search_me'
-  s.version     = '0.1.1'
+  s.version     = '0.1.2'
 	s.date        = "#{Time.now.strftime("%Y-%m-%d")}"
 	s.homepage    = 'https://github.com/jphager2/search_me'
   s.summary     = 'Allows you to define attributes of active record model and its related models which will be searched'

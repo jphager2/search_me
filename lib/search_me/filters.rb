@@ -76,7 +76,7 @@ module SearchMe
 
     private
     def build_between_query_for(duration)
-      field = self.class.arel_table[SearchMe.config.time_field]
+      field = arel_table[search_me_config.time_field]
       arel = field.eq(duration[0])
         .or( field.gt(duration[0]).and(field.lt(duration[1])) )
         .or( field.eq(duration[1]) )
