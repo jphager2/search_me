@@ -28,8 +28,11 @@ class Book < ActiveRecord::Base
   # ActiveRecord Reflections have been defined
   
   # Extend the class Methods
+  extend SearchMe::Configuration
   extend SearchMe::Search
   extend SearchMe::Filters
+
+  search_me_config.time_field = :published_on
 
   # Add search fields for the simple search
   attr_search :name
