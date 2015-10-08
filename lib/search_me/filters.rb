@@ -76,12 +76,11 @@ module SearchMe
 
     private
     def build_between_query_for(duration)
-      field = SearchMe.config.time_field
-      in_created_at = "(#{field} > ?  AND  #{field} < ?)"
-      on_created_at = "(#{field} = ?) OR  (#{field} = ?)"
-      self.where( 
-        "#{in_created_at} OR #{on_created_at}", *duration, *duration
-      )
+      field = self.class.arel_table[SearchMe.config.time_field]
+      arel = field.eq(duration[0])
+        .or( field.gt(duration[0]).and(field.lt(duration[1])) )
+        .or( field.eq(duration[1]) )
+      where( arel )
     end
 
     def month_for_date(date)
